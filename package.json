@@ -1,0 +1,28 @@
+{
+  "name": "notion-tg-push",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeromask1337/notion-tg-push.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zeromask1337/notion-tg-push/issues"
+  },
+  "homepage": "https://github.com/zeromask1337/notion-tg-push#readme",
+  "dependencies": {
+    "@notionhq/client": "^0.2.4",
+    "dotenv": "^10.0.0",
+    "telegraf": "^4.4.1"
+  },
+  "devDependencies": {
+    "prettier": "^2.3.2"
+  }
+}
