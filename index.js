@@ -42,13 +42,68 @@ bot.command("start", (ctx) => {
   console.log(`Incoming chat`, ctx.chat);
 });
 
+// TODO: add verification for my tg profile
 bot.on("message::url", async (ctx) => {
-  // console.log(ctx.msg.caption_entities[0].url);
   const urlFilter =
     /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
-  const link = await ctx.msg.text.match(urlFilter); //TODO: add regix filter to url in caption
-  await notionPush(link[0]);
-  // console.log("Successfully ?");
+
+  function getSafe(fn, defaultVal) {
+    try {
+      return fn();
+    } catch (e) {
+      return defaultVal;
+    }
+  }
+
+  const links = [
+    getSafe(() => ctx.msg.text, undefined),
+    getSafe(() => ctx.msg.caption, undefined),
+    getSafe(() => ctx.msg.caption_entities[0].url, undefined),
+  ];
+
+  console.log(links);
+
+  for (let link of links) {
+    try {
+      if (link !== undefined) {
+        let filteredLink = link.match(urlFilter);
+        if (filteredLink !== null) {
+          console.log(
+            "Found link: ",
+            filteredLink[0],
+            ":",
+            typeof filteredLink[0]
+          );
+        }
+        // console.log("Found link: ", filteredLink, " : ", typeof filteredLink);
+      } else {
+        console.log("No link found");
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  // try {
+  //   if (typeof ctx.msg.text === "string") {
+  //     const link = await ctx.msg.text.match(urlFilter);
+  //     await notionPush(link[0]);
+  //     console.log("Successfully ?");
+  //   } else if (typeof ctx.msg.caption === "string") {
+  //     const link = await ctx.msg.caption.match(urlFilter);
+  //     await notionPush(link[0]);
+  //   } else if (typeof ctx.msg.caption_entities[0].url === "string") {
+  //     await notionPush(ctx.msg.caption_entities[0].url);
+  //   } else {
+  //     console.log("Fucka");
+  //   }
+  // } catch (e) {
+  //   console.log(e);
+  // }
+  // console.log(ctx.msg);
+  // console.log(typeof ctx.msg.text);
+  // console.log(typeof ctx.msg.caption);
+  // console.log(typeof ctx.msg.caption_entities[0].url);
 });
 
 bot.start(console.log("Bot started..."));
