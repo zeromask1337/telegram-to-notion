@@ -6,11 +6,10 @@ const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 
 //Telegraf API
 const { Bot } = require("grammy");
-const url = require("url");
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
-const notionPush = async (postURL) => {
+const notionPush = async (postText, postURL) => {
   const blockId = "fd1e63d7d8864afb84c5e3c72ab1206b";
   const response = await notion.blocks.children.append({
     block_id: blockId,
@@ -23,7 +22,7 @@ const notionPush = async (postURL) => {
             {
               type: "text",
               text: {
-                content: postURL,
+                content: postText,
                 link: {
                   url: postURL,
                 },
@@ -63,47 +62,26 @@ bot.on("message::url", async (ctx) => {
 
   console.log(links);
 
-  for (let link of links) {
+  for (let i in links) {
     try {
-      if (link !== undefined) {
-        let filteredLink = link.match(urlFilter);
+      if (links[i] !== undefined && links[i + 1] !== undefined) {
+        let filteredLink = links[i + 1].match(urlFilter);
+        notionPush(links[i], filteredLink);
+      } else if (links[i] !== undefined) {
+        let filteredLink = links[i].match(urlFilter);
         if (filteredLink !== null) {
-          console.log(
-            "Found link: ",
-            filteredLink[0],
-            ":",
-            typeof filteredLink[0]
-          );
+          console.log("Found link: ", filteredLink[0]);
+          notionPush(filteredLink[0], filteredLink[0]);
         }
         // console.log("Found link: ", filteredLink, " : ", typeof filteredLink);
       } else {
         console.log("No link found");
       }
     } catch (e) {
+      console.log(link);
       console.log(e);
     }
   }
-
-  // try {
-  //   if (typeof ctx.msg.text === "string") {
-  //     const link = await ctx.msg.text.match(urlFilter);
-  //     await notionPush(link[0]);
-  //     console.log("Successfully ?");
-  //   } else if (typeof ctx.msg.caption === "string") {
-  //     const link = await ctx.msg.caption.match(urlFilter);
-  //     await notionPush(link[0]);
-  //   } else if (typeof ctx.msg.caption_entities[0].url === "string") {
-  //     await notionPush(ctx.msg.caption_entities[0].url);
-  //   } else {
-  //     console.log("Fucka");
-  //   }
-  // } catch (e) {
-  //   console.log(e);
-  // }
-  // console.log(ctx.msg);
-  // console.log(typeof ctx.msg.text);
-  // console.log(typeof ctx.msg.caption);
-  // console.log(typeof ctx.msg.caption_entities[0].url);
 });
 
 bot.start(console.log("Bot started..."));
