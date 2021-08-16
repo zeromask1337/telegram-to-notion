@@ -1,114 +1,103 @@
 require("dotenv").config();
 
-//Notion API
+// Notion API
 const { Client } = require("@notionhq/client");
 const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 
-//Telegraf API
+// Telegraf API
 const { Bot } = require("grammy");
-
 const bot = new Bot(process.env.BOT_TOKEN);
 
+// Desired notion block
 const notionPush = async (postText, postURL) => {
-  const blockId = "fd1e63d7d8864afb84c5e3c72ab1206b";
-  const response = await notion.blocks.children.append({
-    block_id: blockId,
-    children: [
-      {
-        object: "block",
-        type: "paragraph",
-        paragraph: {
-          text: [
+    const blockId = process.env.BLOCK_ID;
+    const response = await notion.blocks.children.append({
+        block_id: blockId,
+        children: [
             {
-              type: "text",
-              text: {
-                content: postText,
-                link: {
-                  url: postURL,
+                object: "block",
+                type: "paragraph",
+                paragraph: {
+                    text: [
+                        {
+                            type: "text",
+                            text: {
+                                content: postText,
+                                link: {
+                                    url: postURL,
+                                },
+                            },
+                        },
+                    ],
                 },
-              },
             },
-          ],
-        },
-      },
-    ],
-  });
-  console.log(response);
+        ],
+    });
+    console.log(response);
 };
 
+bot.api.setMyCommands([{ command: "start", description: "Starts the bot" }]);
+
 bot.command("start", (ctx) => {
-  // Get text of new message
-  console.log(`Incoming chat`, ctx.chat);
+    // Returns chat info
+    console.log(`Incoming chat`, ctx.chat);
 });
 
-// TODO: add verification for my tg profile
 bot.on("message::url", async (ctx) => {
-  const urlFilter =
-    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+    // Security shell. Kinda white list
+    // Enter chat id of your account or group
+    if (
+        ctx.chat.id === +process.env.CHAT_ID_1 ||
+        ctx.chat.id === +process.env.CHAT_ID_2
+    ) {
+        const urlFilter =
+            /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
-  function getSafe(fn, defaultVal) {
-    try {
-      return fn();
-    } catch (e) {
-      return defaultVal;
-    }
-  }
-
-  const links = [
-    getSafe(() => ctx.msg.text, undefined),
-    getSafe(() => ctx.msg.caption, undefined),
-    getSafe(() => ctx.msg.caption_entities[0].url, undefined),
-  ];
-
-  console.log(links);
-
-  for (let i in links) {
-    try {
-      if (links[i] !== undefined && links[i + 1] !== undefined) {
-        let filteredLink = links[i + 1].match(urlFilter);
-        notionPush(links[i], filteredLink);
-      } else if (links[i] !== undefined) {
-        let filteredLink = links[i].match(urlFilter);
-        if (filteredLink !== null) {
-          console.log("Found link: ", filteredLink[0]);
-          notionPush(filteredLink[0], filteredLink[0]);
+        function getSafe(fn, defaultVal) {
+            // Function to get rid of TypeError
+            try {
+                return fn();
+            } catch (e) {
+                return defaultVal;
+            }
         }
-        // console.log("Found link: ", filteredLink, " : ", typeof filteredLink);
-      } else {
-        console.log("No link found");
-      }
-    } catch (e) {
-      console.log(link);
-      console.log(e);
+
+        const links = [
+            getSafe(() => ctx.msg.text, undefined),
+            getSafe(() => ctx.msg.caption, undefined),
+            getSafe(() => ctx.msg.caption_entities[0].url, undefined),
+        ];
+
+        // console.log(links); // Debug log
+
+        const [text, caption, captionUrl] = links;
+
+        try {
+            if (text !== undefined) {
+                const link = await text.match(urlFilter);
+                await notionPush(link[0], link[0]);
+                console.log("Successfully text");
+            } else if (caption !== undefined) {
+                const link = await caption.match(urlFilter);
+                if (link !== null) {
+                    await notionPush(link[0], link[0]);
+                    console.log("Successfully caption");
+                } else {
+                    await notionPush(caption, captionUrl);
+                    console.log("Successfully caption with url");
+                }
+            } else if (captionUrl !== undefined) {
+                await notionPush(captionUrl, captionUrl);
+                console.log("Successfully captionURL");
+            } else {
+                console.log("Unknown post structure...");
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    } else {
+        await ctx.reply("Authentication failed...");
     }
-  }
 });
 
 bot.start(console.log("Bot started..."));
-
-// bot.inlineQuery(/best bot (framework|library)/, async (ctx) => {
-//   await ctx.answerInlineQuery(
-//     [
-//       {
-//         type: "article",
-//         id: "grammy-website",
-//         title: "grammY",
-//         input_message_content: {
-//           message_text:
-//             "<b>grammY</b> is the best way to create your own Telegram bots. \
-//     They even have a pretty website! 👇",
-//           parse_mode: "HTML",
-//         },
-//         reply_markup: new InlineKeyboard().url(
-//           "grammY website",
-//           "https://grammy.dev/"
-//         ),
-//         url: "https://grammy.dev/",
-//         description: "The Telegram Bot Framework.",
-//       },
-//     ],
-//     { cache_time: 30 * 24 * 3600 } // one month in seconds
-//   );
-// });
-// // Return empty result list for other queries
-// bot.on("inline_query", (ctx) => ctx.answerInlineQuery([]));
