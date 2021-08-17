@@ -1,11 +1,12 @@
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
 // Notion API
-const { Client } = require("@notionhq/client");
+import { Client } from "@notionhq/client";
 const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 
 // Telegraf API
-const { Bot } = require("grammy");
+import { Bot } from "grammy";
 const bot = new Bot(process.env.BOT_TOKEN);
 
 const notionPush = async (postText, postURL) => {
@@ -44,7 +45,7 @@ bot.command("start", (ctx) => {
 
 bot.on("message::url", async (ctx) => {
     // Security shell. Kinda white list
-    // Enter chat id of your account or group
+    // Add chat id of your account or group
     if (
         ctx.chat.id === +process.env.CHAT_ID_1 ||
         ctx.chat.id === +process.env.CHAT_ID_2
@@ -52,20 +53,11 @@ bot.on("message::url", async (ctx) => {
         const urlFilter =
             /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
-        function getSafe(fn, defaultVal) {
-            // Function to get rid of TypeError
-            try {
-                return fn();
-            } catch (e) {
-                return defaultVal;
-            }
-        }
-
         const links = [
-            getSafe(() => ctx.msg.text, undefined),
-            getSafe(() => ctx.msg.entities, undefined),
-            getSafe(() => ctx.msg.caption, undefined),
-            getSafe(() => ctx.msg.caption_entities, undefined),
+            ctx.msg?.text,
+            ctx.msg?.entities,
+            ctx.msg?.caption,
+            ctx.msg?.caption_entities,
         ];
 
         // console.log(links); // Debug log
@@ -74,34 +66,42 @@ bot.on("message::url", async (ctx) => {
 
         console.log(ctx.msg);
 
-        // try {
         if (text) {
             const link = await text.match(urlFilter);
-            link !== null
-                ? (await notionPush(text, link[0]), console.log("Pushed text"))
-                : 0;
+            if (link) {
+                await notionPush(text, link[0]);
+                console.log("Pushed text");
+            } else {
+                return 0;
+            }
             if (entities) {
                 for (let entity of entities) {
-                    getSafe(() => entity.url, undefined)
-                        ? (await notionPush(entity.url, entity.url),
-                          console.log("Pushed entities"))
-                        : 0;
+                    if (entity?.url) {
+                        await notionPush(entity.url, entity.url);
+                        console.log("Pushed entities");
+                    } else {
+                        return 0;
+                    }
                 }
             } else {
                 return 0;
             }
         } else if (caption) {
             const link = await caption.match(urlFilter);
-            link !== null
-                ? (await notionPush(caption, link[0]),
-                  console.log("Pushed caption"))
-                : 0;
+            if (link) {
+                await notionPush(caption, link[0]);
+                console.log("Pushed caption");
+            } else {
+                return 0;
+            }
             if (captionEntities) {
                 for (let entity of captionEntities) {
-                    getSafe(() => entity.url, undefined)
-                        ? (await notionPush(entity.url, entity.url),
-                          console.log("Pushed caption entities"))
-                        : 0;
+                    if (entity?.url) {
+                        await notionPush(entity.url, entity.url);
+                        console.log("Pushed caption entities");
+                    } else {
+                        return 0;
+                    }
                 }
             } else {
                 return 0;
