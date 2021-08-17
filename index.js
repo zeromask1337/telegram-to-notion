@@ -8,7 +8,6 @@ const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 const { Bot } = require("grammy");
 const bot = new Bot(process.env.BOT_TOKEN);
 
-// Desired notion block
 const notionPush = async (postText, postURL) => {
     const blockId = process.env.BLOCK_ID;
     const response = await notion.blocks.children.append({
@@ -64,36 +63,51 @@ bot.on("message::url", async (ctx) => {
 
         const links = [
             getSafe(() => ctx.msg.text, undefined),
+            getSafe(() => ctx.msg.entities, undefined),
             getSafe(() => ctx.msg.caption, undefined),
-            getSafe(() => ctx.msg.caption_entities[0].url, undefined),
+            getSafe(() => ctx.msg.caption_entities, undefined),
         ];
 
         // console.log(links); // Debug log
 
-        const [text, caption, captionUrl] = links;
+        const [text, entities, caption, captionEntities] = links;
 
-        try {
-            if (text !== undefined) {
-                const link = await text.match(urlFilter);
-                await notionPush(link[0], link[0]);
-                console.log("Successfully text");
-            } else if (caption !== undefined) {
-                const link = await caption.match(urlFilter);
-                if (link !== null) {
-                    await notionPush(link[0], link[0]);
-                    console.log("Successfully caption");
-                } else {
-                    await notionPush(caption, captionUrl);
-                    console.log("Successfully caption with url");
+        console.log(ctx.msg);
+
+        // try {
+        if (text) {
+            const link = await text.match(urlFilter);
+            link !== null
+                ? (await notionPush(text, link[0]), console.log("Pushed text"))
+                : 0;
+            if (entities) {
+                for (let entity of entities) {
+                    getSafe(() => entity.url, undefined)
+                        ? (await notionPush(entity.url, entity.url),
+                          console.log("Pushed entities"))
+                        : 0;
                 }
-            } else if (captionUrl !== undefined) {
-                await notionPush(captionUrl, captionUrl);
-                console.log("Successfully captionURL");
             } else {
-                console.log("Unknown post structure...");
+                return 0;
             }
-        } catch (e) {
-            console.log(e);
+        } else if (caption) {
+            const link = await caption.match(urlFilter);
+            link !== null
+                ? (await notionPush(caption, link[0]),
+                  console.log("Pushed caption"))
+                : 0;
+            if (captionEntities) {
+                for (let entity of captionEntities) {
+                    getSafe(() => entity.url, undefined)
+                        ? (await notionPush(entity.url, entity.url),
+                          console.log("Pushed caption entities"))
+                        : 0;
+                }
+            } else {
+                return 0;
+            }
+        } else {
+            return "Unknown msg structure";
         }
     } else {
         await ctx.reply("Authentication failed...");
