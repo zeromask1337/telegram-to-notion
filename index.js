@@ -50,9 +50,6 @@ bot.on("message::url", async (ctx) => {
         ctx.chat.id === +process.env.CHAT_ID_1 ||
         ctx.chat.id === +process.env.CHAT_ID_2
     ) {
-        const urlFilter =
-            /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
-
         const links = [
             ctx.msg?.text,
             ctx.msg?.entities,
@@ -60,37 +57,26 @@ bot.on("message::url", async (ctx) => {
             ctx.msg?.caption_entities,
         ];
 
-        // console.log(links); // Debug log
-
         const [text, entities, caption, captionEntities] = links;
 
         console.log(ctx.msg);
 
-        async function redirect(item, sub_item) {
-            const link = item.match(urlFilter);
-            if (link) {
-                await notionPush(item, link[0]);
-                console.log(`Pushed ${item}`);
-            } else {
-                return 0;
-            }
-            if (sub_item) {
-                for (let entity of sub_item) {
-                    if (entity?.url) {
-                        await notionPush(entity.url, entity.url);
-                        console.log(`Pushed ${sub_item}`);
-                    } else {
-                        return 0;
-                    }
+        async function redirect(itemText, item) {
+            for (let entity of item) {
+                if (entity.type === "url") {
+                    let link = itemText.substr(entity.offset, entity.length);
+                    await notionPush(link, link);
+                } else if (entity.type === "text_link") {
+                    let link = itemText.substr(entity.offset, entity.length);
+                    console.log(link);
+                    await notionPush(link, entity.url);
                 }
-            } else {
-                return 0;
             }
         }
 
-        if (text) {
+        if (entities) {
             await redirect(text, entities);
-        } else if (caption) {
+        } else if (captionEntities) {
             await redirect(caption, captionEntities);
         } else {
             return "Unknown msg structure";
