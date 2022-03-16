@@ -3,10 +3,24 @@ import 'dotenv/config';
 // Notion API
 import { Client } from "@notionhq/client";
 const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
+// import type {PartialBlockObjectResponse} from "@notionhq/client/build/src/api-endpoints";
 
 // Telegraf API
 import { Bot } from "grammy";
 const bot = new Bot(process.env.BOT_TOKEN);
+
+// function isToDo(value: PartialBlockObjectResponse | BlockObjectResponse): value is BlockObjectResponse {
+//     return "to_do" in value;
+// }
+
+(async () => {
+    const blockId = process.env.BLOCK_ID;
+    const response = await notion.blocks.children.list({
+        block_id: blockId,
+        page_size: 50,
+    });
+    console.log(response.results[1]);
+})();
 
 async function notionPush(postText, postURL) {
     const response = await notion.blocks.children.append({
@@ -35,15 +49,17 @@ async function notionPush(postText, postURL) {
 async function redirect(itemText, item) {
     for (let entity of item) {
         if (entity.type === "url") {
-            let link = itemText.substr(entity.offset, entity.length);
+            let link = itemText.slice(entity.offset, entity.length);
             await notionPush(link, link);
         } else if (entity.type === "text_link") {
-            let link = itemText.substr(entity.offset, entity.length);
+            let link = itemText.slice(entity.offset, entity.length);
             console.log(link);
             await notionPush(link, entity.url);
         }
     }
 }
+
+// async function alreadyExists(blockId: string)
 
 const whiteList: number[] = [+process.env.CHAT_ID_1, +process.env.CHAT_ID_2];
 
