@@ -7,20 +7,39 @@ const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 
 // Telegraf API
 import { Bot } from "grammy";
+import {
+    ListBlockChildrenResponse
+} from "@notionhq/client/build/src/api-endpoints";
 const bot = new Bot(process.env.BOT_TOKEN);
 
-// function isToDo(value: PartialBlockObjectResponse | BlockObjectResponse): value is BlockObjectResponse {
-//     return "to_do" in value;
-// }
+function isTodo <T extends Record<string, unknown>>(obj: T): obj is T & { type: 'to_do' } {
+    return 'type' in obj && obj.type === 'to_do';
+}
 
-(async () => {
-    const blockId = process.env.BLOCK_ID;
-    const response = await notion.blocks.children.list({
-        block_id: blockId,
-        page_size: 50,
-    });
-    console.log(response.results[1]);
-})();
+// const test: ListBlockChildrenResponse = {};
+
+function alreadyExists(link: string, list: ListBlockChildrenResponse) {
+    for (const result of list.results) {
+        if (isTodo(result)) {
+            if (result.to_do.rich_text[0].href == link) {
+                return true;
+            }
+        }
+    }
+};
+
+// (async function (){
+//     const blockId = process.env.BLOCK_ID;
+//     const response = await notion.blocks.children.list({
+//         block_id: blockId,
+//         page_size: 50,
+//     });
+//     const link = "https://twitter.com/nat_davydova/status/1457796596540706831?s=20";
+//     if (alreadyExists(link, response)) {
+//         console.log("Test passed")
+//     }
+// })()
+
 
 async function notionPush(postText, postURL) {
     const response = await notion.blocks.children.append({
@@ -58,8 +77,6 @@ async function redirect(itemText, item) {
         }
     }
 }
-
-// async function alreadyExists(blockId: string)
 
 const whiteList: number[] = [+process.env.CHAT_ID_1, +process.env.CHAT_ID_2];
 
