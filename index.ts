@@ -1,24 +1,21 @@
+// noinspection JSIgnoredPromiseFromCall
+
 import 'dotenv/config';
-
-// Notion API
 import { Client } from "@notionhq/client";
-const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
-// import type {PartialBlockObjectResponse} from "@notionhq/client/build/src/api-endpoints";
-
-// Telegraf API
 import { Bot } from "grammy";
-import {
-    ListBlockChildrenResponse
-} from "@notionhq/client/build/src/api-endpoints";
+import { ListBlockChildrenResponse } from "@notionhq/client/build/src/api-endpoints";
+
+const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 const bot = new Bot(process.env.BOT_TOKEN);
 const whiteList: number[] = [+process.env.CHAT_ID_1, +process.env.CHAT_ID_2];
 
+
+// Type-guard
 function isTodo <T extends Record<string, unknown>>(obj: T): obj is T & { type: 'to_do' } {
     return 'type' in obj && obj.type === 'to_do';
 }
 
-// const test: ListBlockChildrenResponse = {};
-
+// Checks if link already exists in Notion page
 function alreadyExists(link: string, list: ListBlockChildrenResponse) {
     for (const result of list.results) {
         if (isTodo(result)) {
@@ -27,21 +24,9 @@ function alreadyExists(link: string, list: ListBlockChildrenResponse) {
             }
         }
     }
-};
+}
 
-// (async function (){
-//     const blockId = process.env.BLOCK_ID;
-//     const response = await notion.blocks.children.list({
-//         block_id: blockId,
-//         page_size: 50,
-//     });
-//     const link = "https://twitter.com/nat_davydova/status/1457796596540706831?s=20";
-//     if (alreadyExists(link, response)) {
-//         console.log("Test passed")
-//     }
-// })()
-
-
+// Pushes link to the end of specified Notion block
 async function notionPush(postText, postURL) {
     const response = await notion.blocks.children.append({
         block_id: process.env.BLOCK_ID,
@@ -79,7 +64,6 @@ async function redirect(itemText, item) {
     }
 }
 
-const whiteList: number[] = [+process.env.CHAT_ID_1, +process.env.CHAT_ID_2];
 
 bot.api.setMyCommands([{ command: "start", description: "Starts the bot" }]);
 
@@ -87,6 +71,8 @@ bot.command("start", (ctx) => {
     // Returns chat info
     console.log(`Incoming chat`, ctx.chat);
 });
+
+// bot.on("message", (ctx) => console.log("Chat id", ctx.chat.id));
 
 bot.on("message::url", async (ctx) => {
     // Security shell. Kinda white list
@@ -109,7 +95,7 @@ bot.on("message::url", async (ctx) => {
             } else if (captionEntities) {
                 await redirect(caption, captionEntities);
             } else {
-                await ctx.reply("Unknown msg structure");
+                await ctx.reply("Unknown message structure");
             }
         } else {
             await ctx.reply("Authentication failed...");
