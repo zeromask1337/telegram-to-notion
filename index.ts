@@ -11,6 +11,7 @@ import {
     ListBlockChildrenResponse
 } from "@notionhq/client/build/src/api-endpoints";
 const bot = new Bot(process.env.BOT_TOKEN);
+const whiteList: number[] = [+process.env.CHAT_ID_1, +process.env.CHAT_ID_2];
 
 function isTodo <T extends Record<string, unknown>>(obj: T): obj is T & { type: 'to_do' } {
     return 'type' in obj && obj.type === 'to_do';
