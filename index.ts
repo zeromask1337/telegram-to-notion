@@ -75,31 +75,23 @@ bot.command("start", (ctx) => {
 // bot.on("message", (ctx) => console.log("Chat id", ctx.chat.id));
 
 bot.on("message::url", async (ctx) => {
-    // Security shell. Kinda white list
-    // Add chat id of your account or group
-    for (let chatId of whiteList) {
-        if (chatId === ctx.chat.id) {
-            const links = [
-                ctx.msg?.text,
-                ctx.msg?.entities,
-                ctx.msg?.caption,
-                ctx.msg?.caption_entities,
-            ];
+    const links = [
+        ctx.msg?.text,
+        ctx.msg?.entities,
+        ctx.msg?.caption,
+        ctx.msg?.caption_entities,
+    ];
 
-            const [text, entities, caption, captionEntities] = links;
+    const [text, entities, caption, captionEntities] = links;
 
-            console.log(ctx.msg);
+    console.log(ctx.msg);
 
-            if (entities) {
-                await redirect(text, entities);
-            } else if (captionEntities) {
-                await redirect(caption, captionEntities);
-            } else {
-                await ctx.reply("Unknown message structure");
-            }
-        } else {
-            await ctx.reply("Authentication failed...");
-        }
+    if (entities) {
+        await redirect(text, entities);
+    } else if (captionEntities) {
+        await redirect(caption, captionEntities);
+    } else {
+        await ctx.reply("Unknown message structure");
     }
 });
 
