@@ -1,4 +1,4 @@
-lockfileVersion: 5.3
+lockfileVersion: 5.4
 
 specifiers:
   '@notionhq/client': 1.0.2
@@ -19,7 +19,7 @@ devDependencies:
   '@types/node': 17.0.21
   nodemon: 2.0.15
   prettier: 2.5.1
-  ts-node: 10.7.0_e79e62fe450383fd2d418267dc75e645
+  ts-node: 10.7.0_46pgf7sfaob72lkbqjt5y5pgiu
   typescript: 4.6.2
 
 packages:
@@ -856,7 +856,7 @@ packages:
     resolution: {integrity: sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=}
     dev: false
 
-  /ts-node/10.7.0_e79e62fe450383fd2d418267dc75e645:
+  /ts-node/10.7.0_46pgf7sfaob72lkbqjt5y5pgiu:
     resolution: {integrity: sha512-TbIGS4xgJoX2i3do417KSaep1uRAW/Lu+WAL2doDHC0D6ummjirVOXU5/7aiZotbQ5p1Zp9tP7U6cYhA0O7M8A==}
     hasBin: true
     peerDependencies:

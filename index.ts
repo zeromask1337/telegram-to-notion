@@ -1,23 +1,20 @@
+// noinspection JSIgnoredPromiseFromCall
+
 import 'dotenv/config';
-
-// Notion API
 import { Client } from "@notionhq/client";
-const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
-// import type {PartialBlockObjectResponse} from "@notionhq/client/build/src/api-endpoints";
-
-// Telegraf API
 import { Bot } from "grammy";
-import {
-    ListBlockChildrenResponse
-} from "@notionhq/client/build/src/api-endpoints";
+import { ListBlockChildrenResponse } from "@notionhq/client/build/src/api-endpoints";
+
+const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 const bot = new Bot(process.env.BOT_TOKEN);
 
+
+// Type-guard
 function isTodo <T extends Record<string, unknown>>(obj: T): obj is T & { type: 'to_do' } {
     return 'type' in obj && obj.type === 'to_do';
 }
 
-// const test: ListBlockChildrenResponse = {};
-
+// Checks if link already exists in Notion page
 function alreadyExists(link: string, list: ListBlockChildrenResponse) {
     for (const result of list.results) {
         if (isTodo(result)) {
@@ -26,22 +23,10 @@ function alreadyExists(link: string, list: ListBlockChildrenResponse) {
             }
         }
     }
-};
+}
 
-// (async function (){
-//     const blockId = process.env.BLOCK_ID;
-//     const response = await notion.blocks.children.list({
-//         block_id: blockId,
-//         page_size: 50,
-//     });
-//     const link = "https://twitter.com/nat_davydova/status/1457796596540706831?s=20";
-//     if (alreadyExists(link, response)) {
-//         console.log("Test passed")
-//     }
-// })()
-
-
-async function notionPush(postText, postURL) {
+// Pushes link to the end of specified Notion block
+async function pushToNotion(postText, postURL) {
     const response = await notion.blocks.children.append({
         block_id: process.env.BLOCK_ID,
         children: [
@@ -69,16 +54,15 @@ async function redirect(itemText, item) {
     for (let entity of item) {
         if (entity.type === "url") {
             let link = itemText.slice(entity.offset, entity.length);
-            await notionPush(link, link);
+            await pushToNotion(link, link);
         } else if (entity.type === "text_link") {
             let link = itemText.slice(entity.offset, entity.length);
             console.log(link);
-            await notionPush(link, entity.url);
+            await pushToNotion(link, entity.url);
         }
     }
 }
 
-const whiteList: number[] = [+process.env.CHAT_ID_1, +process.env.CHAT_ID_2];
 
 bot.api.setMyCommands([{ command: "start", description: "Starts the bot" }]);
 
@@ -87,32 +71,26 @@ bot.command("start", (ctx) => {
     console.log(`Incoming chat`, ctx.chat);
 });
 
+// bot.on("message", (ctx) => console.log("Chat id", ctx.chat.id));
+
 bot.on("message::url", async (ctx) => {
-    // Security shell. Kinda white list
-    // Add chat id of your account or group
-    for (let chatId of whiteList) {
-        if (chatId === ctx.chat.id) {
-            const links = [
-                ctx.msg?.text,
-                ctx.msg?.entities,
-                ctx.msg?.caption,
-                ctx.msg?.caption_entities,
-            ];
+    const links = [
+        ctx.msg?.text,
+        ctx.msg?.entities,
+        ctx.msg?.caption,
+        ctx.msg?.caption_entities,
+    ];
 
-            const [text, entities, caption, captionEntities] = links;
+    const [text, entities, caption, captionEntities] = links;
 
-            console.log(ctx.msg);
+    console.log(ctx.msg);
 
-            if (entities) {
-                await redirect(text, entities);
-            } else if (captionEntities) {
-                await redirect(caption, captionEntities);
-            } else {
-                await ctx.reply("Unknown msg structure");
-            }
-        } else {
-            await ctx.reply("Authentication failed...");
-        }
+    if (entities) {
+        await redirect(text, entities);
+    } else if (captionEntities) {
+        await redirect(caption, captionEntities);
+    } else {
+        await ctx.reply("Unknown message structure");
     }
 });
 
