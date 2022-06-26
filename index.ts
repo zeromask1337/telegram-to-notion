@@ -7,7 +7,6 @@ import { ListBlockChildrenResponse } from "@notionhq/client/build/src/api-endpoi
 
 const notion = new Client({ auth: process.env.NOTION_ACCESS_TOKEN });
 const bot = new Bot(process.env.BOT_TOKEN);
-const whiteList: number[] = [+process.env.CHAT_ID_1, +process.env.CHAT_ID_2];
 
 
 // Type-guard
@@ -27,7 +26,7 @@ function alreadyExists(link: string, list: ListBlockChildrenResponse) {
 }
 
 // Pushes link to the end of specified Notion block
-async function notionPush(postText, postURL) {
+async function pushToNotion(postText, postURL) {
     const response = await notion.blocks.children.append({
         block_id: process.env.BLOCK_ID,
         children: [
@@ -55,11 +54,11 @@ async function redirect(itemText, item) {
     for (let entity of item) {
         if (entity.type === "url") {
             let link = itemText.slice(entity.offset, entity.length);
-            await notionPush(link, link);
+            await pushToNotion(link, link);
         } else if (entity.type === "text_link") {
             let link = itemText.slice(entity.offset, entity.length);
             console.log(link);
-            await notionPush(link, entity.url);
+            await pushToNotion(link, entity.url);
         }
     }
 }
