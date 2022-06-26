@@ -1,3 +1,6 @@
+> **Warning**
+> Project deprecated because of shitty notion API
+
 # Telegram to Notion
 
 Send message links from telegram to notion block. Type
